@@ -1,11 +1,8 @@
 package utils;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import model.Laureate;
 import model.LaureateList;
-
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.io.IOException;
 import java.net.URL;
@@ -13,31 +10,55 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class Functionality {
-    public static void main(String[] args) throws IOException {
+import static java.lang.String.*;
 
+public class Functionality {
+
+    public Map<String, Double> getGenderDistributionList() throws IOException {
+        Map<String, Double> genderDistributionList = new HashMap<>();
+        List<Laureate> laureates = getLaureateList();
+        Function<Long, Double> getStatistics = genderPercent -> (double) genderPercent / laureates.size() * 100;
+        Map<String, List<Laureate>> genderMap = genderMap(laureates);
+        List<String> genders = new ArrayList<>(genderMap.keySet());
+        genders.forEach(gender -> {
+            Double percent = getStatistics.apply(
+                    laureates.
+                            stream()
+                            .filter(laureate -> laureate.getGender().equals(valueOf(gender)))
+                            .count());
+            genderDistributionList.put(valueOf(gender), percent);
+
+        });
+        return genderDistributionList;
     }
 
-    private void printInterest() throws IOException {
-        Map<String, Double> interest = getGenderDistributionList();
-//        Predicate<String> isOrganization = who.
-//                interest.keySet()
-//                .stream()
-//                .filter()
-        interest.forEach((key, value) -> {
-            System.out.println(key);
-            System.out.println(value);
+    public void printInterest(Map<String, Double> interest) throws IOException {
 
+        Predicate<String> isOrganization = isOrg -> isOrg.equals("org");
+        Predicate<String> isMale = isM -> isM.equals("male");
+        Predicate<String> isFemale = isF -> isF.equals("female");
+
+        System.out.println("Statistic of interest for Nobel laureates");
+        interest.forEach((key, value) -> {
+            if(isFemale.test(key)){
+                key = "Female";
+            }else if(isOrganization.test(key)){
+                key = "Organization";
+            }
+            else if(isMale.test(key)){
+                key = "Male";
+            }
+            System.out.printf("-> %s : %s%%%n",key, value);
         });
     }
 
-    private void printAllLaureates() throws IOException {
+    public void printAllLaureates() throws IOException {
         List<Laureate> laureates = getLaureateList();
         laureates.forEach(System.out::println);
         getAliveGenderGrouping();
     }
 
-    private List<Laureate> getLaureateList() throws IOException {
+    public List<Laureate> getLaureateList() throws IOException {
         String jsonUrl = "http://api.nobelprize.org/v1/laureate.json";
         URL url = new URL(jsonUrl);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -46,7 +67,7 @@ public class Functionality {
         return laureates.getLaureates();
     }
 
-    private void getAliveGenderGrouping() throws IOException {
+    public void getAliveGenderGrouping() throws IOException {
         List<Laureate> laureates = getLaureateList();
         Predicate<Laureate> normalGenders = laureate ->
                 laureate.getGender().equals("male") || laureate.getGender().equals("female");
@@ -64,30 +85,12 @@ public class Functionality {
 
     }
 
-
-    public Map<String, Double> getGenderDistributionList() throws IOException {
-        Map<String, Double> genderDistributionList = new HashMap<>();
-        List<Laureate> laureates = getLaureateList();
-        Function<Long, Double> getStatistics = genderPercent -> (double) genderPercent / laureates.size() * 100;
-        Map<String, List<Laureate>> genderMap = genderMap(laureates);
-        List<String> genders = new ArrayList<>(genderMap.keySet());
-        genders.forEach(gender -> {
-            Double percent = getStatistics.apply(
-                    laureates.
-                            stream()
-                            .filter(laureate -> laureate.getGender().equals(String.valueOf(gender)))
-                            .count());
-            genderDistributionList.put(String.valueOf(gender), percent);
-
-        });
-        return genderDistributionList;
-    }
-
-
-    private static Map<String, List<Laureate>> genderMap(List<Laureate> laureates) {
+    public static Map<String, List<Laureate>> genderMap(List<Laureate> laureates) {
         return laureates.stream()
                 .collect(Collectors.groupingBy(Laureate::getGender));
     }
+
+
 
 
 }
